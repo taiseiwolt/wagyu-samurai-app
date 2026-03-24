@@ -70,9 +70,9 @@ const STATUS_COLORS: Record<Booking["status"], string> = {
 };
 
 const PLAN_PRICES: Record<string, number> = {
-  standard: 2000,
-  premium: 5000,
-  vip: 10000,
+  standard: 1500,
+  premium: 2000,
+  vip: 3000,
 };
 
 // --- Navigation ---
@@ -790,9 +790,9 @@ function DetailPanel({
                   onChange={(e) => setPlan(e.target.value)}
                   className="w-full bg-sumi border border-white/10 rounded-lg px-3 py-2 text-shimofuri text-sm focus:outline-none focus:border-charcoal-red appearance-none"
                 >
-                  <option value="standard">Standard (¥2,000/person)</option>
-                  <option value="premium">Premium (¥5,000/person)</option>
-                  <option value="vip">VIP (¥10,000/person)</option>
+                  <option value="standard">Standard (¥1,500/person)</option>
+                  <option value="premium">Premium (¥2,000/person)</option>
+                  <option value="vip">VIP (¥3,000/person)</option>
                 </select>
               </div>
             </div>
