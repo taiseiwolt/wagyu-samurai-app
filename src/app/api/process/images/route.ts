@@ -26,28 +26,72 @@ interface ProcessedMedia {
   };
 }
 
-// --- Color grading transformations ---
+// --- LUT Upload (one-time, cached) ---
 
-const COLOR_GRADE_BASE = [
-  { effect: "art:warm" },
-  { effect: "saturation:-20" },
-  { effect: "brightness:-10" },
-  { effect: "improve:outdoor:15" }, // contrast boost
-  { effect: "sharpen:80" },
-];
+let lutPublicId: string | null = null;
+
+async function ensureLutUploaded(): Promise<string> {
+  if (lutPublicId) return lutPublicId;
+
+  // Check if already uploaded
+  const targetId = "wagyu-samurai/lut/wagyu_samurai";
+  try {
+    await cloudinary.api.resource(targetId, { resource_type: "raw" });
+    lutPublicId = targetId;
+    return lutPublicId;
+  } catch {
+    // Not found — upload it
+  }
+
+  // Upload .cube LUT as raw file to Cloudinary
+  const lutUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL ? "" : ""}https://raw.githubusercontent.com/taiseiwolt/wagyu-samurai-app/main/public/assets/lut/wagyu_samurai.cube`;
+
+  // For local/server access, use the file path or a data URI
+  const fs = await import("fs");
+  const path = await import("path");
+  const lutPath = path.join(process.cwd(), "public", "assets", "lut", "wagyu_samurai.cube");
+
+  if (fs.existsSync(lutPath)) {
+    const result = await cloudinary.uploader.upload(lutPath, {
+      resource_type: "raw",
+      public_id: targetId,
+      overwrite: true,
+    });
+    lutPublicId = result.public_id;
+  } else {
+    // Fallback: upload from URL (when deployed)
+    const result = await cloudinary.uploader.upload(lutUrl, {
+      resource_type: "raw",
+      public_id: targetId,
+      overwrite: true,
+    });
+    lutPublicId = result.public_id;
+  }
+
+  return lutPublicId!;
+}
+
+// --- Color grading transformations ---
 
 function buildTransformation(
   width: number,
   height: number,
   storeName: string | null,
   area: string | null,
+  lutId: string | null,
 ) {
-  const transforms: Record<string, unknown>[] = [
-    // 1. Color grading
-    ...COLOR_GRADE_BASE,
-    // 2. Resize
-    { crop: "fill", width, height, gravity: "auto" },
-  ];
+  const transforms: Record<string, unknown>[] = [];
+
+  // 1. Apply custom LUT for brand color grading (replaces old art:warm etc.)
+  if (lutId) {
+    transforms.push({ effect: `lut:${lutId}.cube` });
+  }
+
+  // 2. Light sharpening (LUT handles color/contrast/saturation)
+  transforms.push({ effect: "sharpen:60" });
+
+  // 3. Resize
+  transforms.push({ crop: "fill", width, height, gravity: "auto" });
 
   // 3. Text overlay (only if store info available)
   if (storeName) {
@@ -120,6 +164,14 @@ export async function POST(req: NextRequest) {
     const storeName = storeData?.name_en || storeData?.name || null;
     const storeArea = storeData?.area || null;
 
+    // 2b. Ensure LUT is uploaded to Cloudinary
+    let lutId: string | null = null;
+    try {
+      lutId = await ensureLutUploaded();
+    } catch (lutErr) {
+      console.warn("LUT upload failed, falling back to no-LUT processing:", lutErr);
+    }
+
     // 3. Process each image
     const processed: ProcessedMedia[] = [];
 
@@ -180,18 +232,13 @@ export async function POST(req: NextRequest) {
 
         // Generate 1:1 (square) version
         const squareUrl = cloudinary.url(publicId, {
-          transformation: buildTransformation(1080, 1080, storeName, storeArea),
+          transformation: buildTransformation(1080, 1080, storeName, storeArea, lutId),
           secure: true,
         });
 
         // Generate 4:5 (portrait) version
         const portraitUrl = cloudinary.url(publicId, {
-          transformation: buildTransformation(
-            1080,
-            1350,
-            storeName,
-            storeArea,
-          ),
+          transformation: buildTransformation(1080, 1350, storeName, storeArea, lutId),
           secure: true,
         });
 
