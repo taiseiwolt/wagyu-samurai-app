@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase-browser";
+import { processVideoWithFFmpeg } from "@/lib/ffmpeg-process";
 
 // --- Types ---
 
@@ -222,6 +223,7 @@ export default function UploadPage() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [processingImages, setProcessingImages] = useState(false);
+  const [videoProgress, setVideoProgress] = useState<number>(0);
 
   // --- Scrape handler ---
   async function handleScrape() {
@@ -357,6 +359,149 @@ export default function UploadPage() {
     setVideos((prev) => prev.filter((v) => v.id !== id));
   }
 
+  // --- Video processing helper (client-side FFmpeg) ---
+  async function processVideosClientSide(
+    postId: string,
+    storeId: string,
+  ): Promise<string> {
+    const hasVideos = videos.some((v) => v.mediaId);
+
+    if (hasVideos) {
+      // Update video media records with post_id
+      const videoMediaIds = videos
+        .filter((v) => v.mediaId)
+        .map((v) => v.mediaId);
+      if (videoMediaIds.length > 0) {
+        await supabase
+          .from("media")
+          .update({ post_id: postId })
+          .in("id", videoMediaIds);
+      }
+
+      // Phase 1: Server-side Runway ML processing
+      setToast("Processing videos (AI enhancement)...");
+      const serverRes = await fetch("/api/process/videos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          post_id: postId,
+          options: {
+            slow_motion: true,
+            slow_motion_factor: 0.5,
+            add_bgm: true,
+            bgm_track: "lofi_01",
+          },
+        }),
+      });
+
+      if (!serverRes.ok) {
+        return "Video AI processing failed";
+      }
+
+      const serverData = await serverRes.json();
+      if (!serverData.success) {
+        return `Video error: ${serverData.error}`;
+      }
+
+      // Phase 2: Client-side FFmpeg processing for each video
+      setToast("Processing videos (crop + watermark + BGM)...");
+      let processedCount = 0;
+
+      for (const video of serverData.videos) {
+        try {
+          const videoUrl = video.runway_video_url || video.original_signed_url;
+
+          const result = await processVideoWithFFmpeg({
+            inputVideo: videoUrl,
+            addWatermark: true,
+            bgmTrack: serverData.options.bgm_track,
+            onProgress: (pct) => setVideoProgress(pct),
+          });
+
+          // Save processed video via API
+          const formData = new FormData();
+          formData.append("media_id", video.media_id);
+          formData.append("store_id", storeId);
+          formData.append(
+            "video",
+            new File([result.videoBlob], "processed.mp4", {
+              type: "video/mp4",
+            }),
+          );
+          formData.append(
+            "duration_seconds",
+            String(result.durationSeconds),
+          );
+          formData.append("resolution", result.resolution);
+
+          await fetch("/api/process/videos/save", {
+            method: "POST",
+            body: formData,
+          });
+
+          processedCount++;
+        } catch (err) {
+          console.error(`FFmpeg processing failed for ${video.media_id}:`, err);
+        }
+      }
+
+      setVideoProgress(0);
+      return processedCount > 0
+        ? `${processedCount} video(s) processed`
+        : "Video processing failed";
+    } else {
+      // No videos uploaded — generate from photo via Runway
+      setToast("Generating video from photo (AI)...");
+      const res = await fetch("/api/process/images-to-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          post_id: postId,
+          options: { bgm_track: "lofi_01" },
+        }),
+      });
+
+      if (!res.ok) return "Image-to-video generation failed";
+      const data = await res.json();
+      if (!data.success) return `Image-to-video error: ${data.error}`;
+
+      // Client-side FFmpeg processing
+      setToast("Processing generated video (crop + watermark + BGM)...");
+      try {
+        const result = await processVideoWithFFmpeg({
+          inputVideo: data.video.video_url,
+          addWatermark: true,
+          bgmTrack: data.options.bgm_track,
+          onProgress: (pct) => setVideoProgress(pct),
+        });
+
+        const formData = new FormData();
+        formData.append("media_id", data.video.media_id);
+        formData.append("store_id", data.video.store_id);
+        formData.append(
+          "video",
+          new File([result.videoBlob], "processed.mp4", {
+            type: "video/mp4",
+          }),
+        );
+        formData.append("duration_seconds", String(result.durationSeconds));
+        formData.append("resolution", result.resolution);
+
+        await fetch("/api/process/videos/save", {
+          method: "POST",
+          body: formData,
+        });
+
+        setVideoProgress(0);
+        return "Video generated from photo";
+      } catch (err) {
+        console.error("FFmpeg processing of generated video failed:", err);
+        setVideoProgress(0);
+        return "Video post-processing failed";
+      }
+    }
+  }
+
   // --- Generate handler ---
   const canSubmit = store && photos.length > 0 && !submitting;
 
@@ -390,7 +535,7 @@ export default function UploadPage() {
 
       const postId = postData.id;
 
-      // 2. Update media records with post_id
+      // 2. Update photo media records with post_id
       const photoMediaIds = photos
         .filter((p) => p.mediaId)
         .map((p) => p.mediaId);
@@ -401,10 +546,10 @@ export default function UploadPage() {
           .in("id", photoMediaIds);
       }
 
-      setToast("Draft created! Generating content & processing images...");
+      setToast("Draft created! Generating content & processing media...");
 
-      // 3. Kick off text generation + image processing in parallel
-      const [generateRes, imageRes] = await Promise.allSettled([
+      // 3. Kick off text generation + image processing + video processing in parallel
+      const [generateRes, imageRes, videoMsg] = await Promise.allSettled([
         fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -415,6 +560,7 @@ export default function UploadPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ post_id: postId }),
         }),
+        processVideosClientSide(postId, store.id),
       ]);
 
       const msgs: string[] = [];
@@ -428,6 +574,11 @@ export default function UploadPage() {
       } else {
         msgs.push("Image processing failed");
       }
+      if (videoMsg.status === "fulfilled") {
+        msgs.push(videoMsg.value);
+      } else {
+        msgs.push("Video processing failed");
+      }
 
       setToast(msgs.join(" · "));
     } catch {
@@ -435,7 +586,7 @@ export default function UploadPage() {
     } finally {
       setSubmitting(false);
       setProcessingImages(false);
-      setTimeout(() => setToast(null), 5000);
+      setTimeout(() => setToast(null), 8000);
     }
   }
 
@@ -599,9 +750,11 @@ export default function UploadPage() {
                 className="w-full py-4 bg-charcoal-red text-shimofuri font-heading text-lg tracking-wider rounded-xl hover:bg-[#A63000] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 {submitting
-                  ? processingImages
-                    ? "Generating & Processing..."
-                    : "Creating draft..."
+                  ? videoProgress > 0
+                    ? `Processing video... ${videoProgress}%`
+                    : processingImages
+                      ? "Generating & Processing..."
+                      : "Creating draft..."
                   : "Generate"}
               </button>
               {!store && (
