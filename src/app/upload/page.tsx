@@ -221,6 +221,7 @@ export default function UploadPage() {
   // Submit state
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [processingImages, setProcessingImages] = useState(false);
 
   // --- Scrape handler ---
   async function handleScrape() {
@@ -362,6 +363,7 @@ export default function UploadPage() {
   async function handleGenerate() {
     if (!canSubmit || !store) return;
     setSubmitting(true);
+    setProcessingImages(true);
 
     try {
       const mediaIds = [
@@ -369,23 +371,71 @@ export default function UploadPage() {
         ...videos.filter((v) => v.mediaId).map((v) => v.mediaId),
       ];
 
-      const { error } = await supabase.from("posts").insert({
-        store_id: store.id,
-        status: "draft",
-        memo: memo.trim() || null,
-        media_ids: mediaIds,
-      });
+      // 1. Create post draft
+      const { data: postData, error } = await supabase
+        .from("posts")
+        .insert({
+          store_id: store.id,
+          status: "draft",
+          memo: memo.trim() || null,
+          media_ids: mediaIds,
+        })
+        .select("id")
+        .single();
 
-      if (error) {
-        setToast(`Error: ${error.message}`);
-      } else {
-        setToast("Post draft created! Generation is coming soon.");
+      if (error || !postData) {
+        setToast(`Error: ${error?.message || "Failed to create post"}`);
+        return;
       }
+
+      const postId = postData.id;
+
+      // 2. Update media records with post_id
+      const photoMediaIds = photos
+        .filter((p) => p.mediaId)
+        .map((p) => p.mediaId);
+      if (photoMediaIds.length > 0) {
+        await supabase
+          .from("media")
+          .update({ post_id: postId })
+          .in("id", photoMediaIds);
+      }
+
+      setToast("Draft created! Generating content & processing images...");
+
+      // 3. Kick off text generation + image processing in parallel
+      const [generateRes, imageRes] = await Promise.allSettled([
+        fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ post_id: postId, store_id: store.id }),
+        }),
+        fetch("/api/process/images", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ post_id: postId }),
+        }),
+      ]);
+
+      const msgs: string[] = [];
+      if (generateRes.status === "fulfilled" && generateRes.value.ok) {
+        msgs.push("Text generated");
+      } else {
+        msgs.push("Text generation failed");
+      }
+      if (imageRes.status === "fulfilled" && imageRes.value.ok) {
+        msgs.push("Images processed");
+      } else {
+        msgs.push("Image processing failed");
+      }
+
+      setToast(msgs.join(" · "));
     } catch {
       setToast("Failed to create draft. Please try again.");
     } finally {
       setSubmitting(false);
-      setTimeout(() => setToast(null), 4000);
+      setProcessingImages(false);
+      setTimeout(() => setToast(null), 5000);
     }
   }
 
@@ -548,7 +598,11 @@ export default function UploadPage() {
                 disabled={!canSubmit}
                 className="w-full py-4 bg-charcoal-red text-shimofuri font-heading text-lg tracking-wider rounded-xl hover:bg-[#A63000] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                {submitting ? "Creating draft..." : "Generate"}
+                {submitting
+                  ? processingImages
+                    ? "Generating & Processing..."
+                    : "Creating draft..."
+                  : "Generate"}
               </button>
               {!store && (
                 <p className="text-shimofuri/30 text-xs text-center mt-2">
