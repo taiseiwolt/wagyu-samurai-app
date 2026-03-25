@@ -26,6 +26,7 @@ interface Booking {
   reservation_time: string | null;
   admin_notes: string | null;
   confirmation_email_sent: boolean;
+  followup_email_sent: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -557,6 +558,9 @@ function DetailPanel({
   const [emailBody, setEmailBody] = useState("");
   const [showEmailPreview, setShowEmailPreview] = useState(false);
 
+  // Followup state
+  const [sendingFollowup, setSendingFollowup] = useState(false);
+
   // Alternatives state
   const [loadingAlts, setLoadingAlts] = useState(false);
   const [alternatives, setAlternatives] = useState<Alternative[]>([]);
@@ -951,6 +955,50 @@ function DetailPanel({
                 Confirmation email already sent
               </p>
             )}
+
+            {/* Followup Email Section */}
+            <div className="border-t border-white/10 pt-3 mt-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-shimofuri/60">Follow-up Email</span>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full ${
+                    booking.followup_email_sent
+                      ? "bg-green-500/20 text-green-400"
+                      : "bg-yellow-500/20 text-yellow-400"
+                  }`}
+                >
+                  {booking.followup_email_sent ? "Sent" : "Not sent"}
+                </span>
+              </div>
+              {!booking.followup_email_sent && booking.customer_email && (
+                <button
+                  onClick={async () => {
+                    setSendingFollowup(true);
+                    try {
+                      const res = await fetch("/api/followup/test", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ booking_id: booking.id }),
+                      });
+                      if (res.ok) {
+                        onUpdated();
+                      } else {
+                        const err = await res.json();
+                        alert(err.error || "Failed to send followup email");
+                      }
+                    } catch {
+                      alert("Failed to send followup email");
+                    } finally {
+                      setSendingFollowup(false);
+                    }
+                  }}
+                  disabled={sendingFollowup}
+                  className="w-full py-2 bg-[#C4A35A]/20 text-[#C4A35A] text-sm font-medium rounded-lg hover:bg-[#C4A35A]/30 transition-colors disabled:opacity-40"
+                >
+                  {sendingFollowup ? "Sending..." : "Send followup now"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
