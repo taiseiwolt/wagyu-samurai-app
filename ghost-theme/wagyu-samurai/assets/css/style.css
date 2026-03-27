@@ -1,0 +1,533 @@
+/* ============================================
+   WAGYU SAMURAI — Ghost Theme v2.0
+   Colors: #1A1A1A (墨黒), #F5F0EB (霜降り白),
+           #8B2500 (炭火赤), #C4A35A (金)
+   Fonts:  Cormorant Garamond (headings),
+           DM Sans (body)
+   ============================================ */
+
+:root {
+    --bg: #1A1A1A;
+    --bg-card: #2A2A2A;
+    --text: #F5F0EB;
+    --text-muted: #999;
+    --accent: #8B2500;
+    --accent-hover: #A63000;
+    --gold: #C4A35A;
+    --border: #333;
+    --font-heading: 'Cormorant Garamond', serif;
+    --font-body: 'DM Sans', sans-serif;
+}
+
+/* Reset */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--gold); text-decoration: none; transition: color .2s; }
+a:hover { color: var(--text); }
+
+img { max-width: 100%; height: auto; }
+
+/* ---- Header ---- */
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(26, 26, 26, .95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+}
+
+.header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: .8rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.site-logo {
+    display: flex;
+    gap: .4rem;
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text);
+}
+
+.logo-wagyu { color: var(--text); }
+.logo-samurai { color: var(--gold); }
+
+.site-nav { display: flex; align-items: center; gap: 1.5rem; }
+.site-nav a {
+    font-size: .85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    transition: color .2s;
+}
+.site-nav a:hover { color: var(--gold); }
+
+/* "Book a Table" button style in nav */
+.site-nav a[href*="book"] {
+    background: var(--accent);
+    color: var(--text);
+    padding: .5rem 1.2rem;
+    border-radius: 4px;
+    font-weight: 700;
+    transition: background .2s;
+}
+.site-nav a[href*="book"]:hover {
+    background: var(--accent-hover);
+    color: var(--text);
+}
+
+.menu-toggle { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
+.menu-toggle span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: var(--text);
+    margin: 5px 0;
+    transition: .3s;
+}
+
+/* ---- Hero ---- */
+.hero-section {
+    padding: 6rem 1.5rem 4rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+}
+
+.hero-title {
+    font-family: var(--font-heading);
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    color: var(--text);
+    margin-bottom: .75rem;
+}
+
+.hero-description {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    color: var(--gold);
+    max-width: 600px;
+    margin: 0 auto;
+    font-style: italic;
+}
+
+/* ---- Posts Grid ---- */
+.posts-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+.post-card {
+    background: var(--bg-card);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: transform .25s, box-shadow .25s, border-color .25s;
+}
+
+.post-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,.4);
+    border-color: var(--accent);
+}
+
+.post-card-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+.post-card-image {
+    height: 220px;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--border);
+}
+
+.post-card-image--default {
+    background: linear-gradient(135deg, var(--bg-card), var(--border));
+}
+
+.post-card-content { padding: 1.5rem; }
+
+.post-card-tag {
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--gold);
+    margin-bottom: .5rem;
+}
+
+.post-card-title {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: .5rem;
+    color: var(--text);
+}
+
+.post-card-excerpt {
+    font-size: .9rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: .75rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.post-card-date {
+    font-size: .75rem;
+    color: var(--text-muted);
+    letter-spacing: .05em;
+}
+
+/* ---- Single Post ---- */
+.post-hero {
+    position: relative;
+    height: 60vh;
+    min-height: 400px;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: flex-end;
+}
+
+.post-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(26,26,26,.9) 0%, transparent 60%);
+}
+
+.post-hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    padding: 3rem 2rem;
+}
+
+.post-header-no-image {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 2rem;
+    text-align: center;
+}
+
+.post-tag {
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--gold);
+    margin-bottom: .75rem;
+}
+
+.post-title {
+    font-family: var(--font-heading);
+    font-size: 2.6rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: .5rem;
+}
+
+.post-date {
+    font-size: .85rem;
+    color: var(--text-muted);
+}
+
+.post-body {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 4rem;
+}
+
+/* ---- Restaurant Info Box ---- */
+.restaurant-info-box {
+    margin-bottom: 2.5rem;
+    padding: 1.5rem 2rem;
+    background: var(--bg-card);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+}
+
+.restaurant-info-box h3 {
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    color: var(--text);
+    margin-bottom: 1rem;
+}
+
+.restaurant-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .75rem;
+    margin-bottom: 1.5rem;
+}
+
+.restaurant-info-item {}
+
+.restaurant-info-label {
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--gold);
+    margin-bottom: .15rem;
+}
+
+.restaurant-info-value {
+    font-size: .95rem;
+    color: var(--text);
+}
+
+.restaurant-info-box p {
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+}
+
+/* ---- Post Content ---- */
+.post-content {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: var(--text);
+}
+
+.post-content h2 {
+    font-family: var(--font-heading);
+    font-size: 1.8rem;
+    margin: 2.5rem 0 1rem;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: .3rem;
+}
+
+.post-content h3 {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    margin: 2rem 0 .75rem;
+    color: var(--gold);
+}
+
+.post-content p { margin-bottom: 1.5rem; }
+.post-content img { border-radius: 8px; margin: 2rem 0; }
+.post-content blockquote {
+    border-left: 3px solid var(--gold);
+    padding-left: 1.5rem;
+    margin: 2rem 0;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ---- CTA Button ---- */
+.cta-button {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: var(--text);
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: .04em;
+    border-radius: 4px;
+    text-align: center;
+    transition: background .2s, transform .15s;
+}
+
+.cta-button:hover {
+    background: var(--accent-hover);
+    color: var(--text);
+    transform: translateY(-1px);
+}
+
+/* ---- Page ---- */
+.page-header {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 2rem;
+    text-align: center;
+}
+
+.page-title {
+    font-family: var(--font-heading);
+    font-size: 2.4rem;
+    font-weight: 700;
+}
+
+.page-body {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 1.5rem 4rem;
+}
+
+/* ---- Pagination ---- */
+.pagination {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem 4rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+}
+
+.pagination a {
+    padding: .5rem 1.2rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: .85rem;
+    font-weight: 500;
+    color: var(--gold);
+    transition: background .2s;
+}
+.pagination a:hover { background: var(--border); color: var(--text); }
+
+.pagination-info {
+    font-size: .8rem;
+    color: var(--text-muted);
+}
+
+/* ---- Footer ---- */
+.site-footer {
+    border-top: 1px solid var(--border);
+    padding: 3rem 1.5rem;
+    text-align: center;
+}
+
+.footer-inner { max-width: 600px; margin: 0 auto; }
+
+.footer-brand {
+    margin-bottom: 1.5rem;
+}
+
+.footer-brand .logo-wagyu,
+.footer-brand .logo-samurai {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.footer-tagline {
+    font-size: .85rem;
+    color: #666;
+    margin-top: .5rem;
+    font-style: italic;
+}
+
+.footer-areas {
+    font-size: .8rem;
+    color: #666;
+    margin-top: .3rem;
+    letter-spacing: .05em;
+}
+
+.footer-social {
+    margin-bottom: 1.5rem;
+}
+
+.footer-social a {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    color: #666;
+    font-size: .85rem;
+    transition: color .2s;
+}
+.footer-social a:hover { color: var(--gold); }
+
+.footer-copy {
+    font-size: .75rem;
+    color: #666;
+}
+
+/* ---- Responsive: Desktop (default) ---- */
+/* posts-grid is 3 columns by default */
+
+/* ---- Responsive: Tablet ---- */
+@media (max-width: 1024px) {
+    .posts-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ---- Responsive: Mobile ---- */
+@media (max-width: 768px) {
+    .menu-toggle { display: block; }
+
+    .site-nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 1.5rem;
+        gap: .75rem;
+    }
+
+    .site-nav.active { display: flex; }
+
+    .site-nav a[href*="book"] {
+        text-align: center;
+    }
+
+    .hero-title { font-size: 2rem; }
+    .hero-section { padding: 4rem 1rem 3rem; }
+
+    .posts-grid {
+        grid-template-columns: 1fr;
+        padding: 2rem 1rem;
+    }
+
+    .post-hero { height: 40vh; min-height: 280px; }
+    .post-title { font-size: 1.8rem; }
+    .post-body { padding: 2rem 1rem 3rem; }
+
+    .restaurant-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cta-button {
+        font-size: .95rem;
+        padding: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-title { font-size: 1.6rem; }
+    .post-title { font-size: 1.5rem; }
+    .posts-grid { gap: 1.5rem; }
+    .post-card-image { height: 180px; }
+}

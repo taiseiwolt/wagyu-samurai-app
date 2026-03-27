@@ -1,0 +1,46 @@
+{{!< default}}
+
+<section class="hero-section">
+    <div class="hero-inner">
+        <h1 class="hero-title">WAGYU SAMURAI</h1>
+        <p class="hero-description">Hand-picked. If it's here, it's worth it. Taste over trends.</p>
+    </div>
+</section>
+
+<section class="posts-grid">
+    {{#foreach posts}}
+    <article class="post-card {{post_class}}">
+        <a class="post-card-link" href="{{url}}">
+            {{#if feature_image}}
+            <div class="post-card-image" style="background-image: url({{feature_image}})"></div>
+            {{else}}
+            <div class="post-card-image post-card-image--default"></div>
+            {{/if}}
+            <div class="post-card-content">
+                {{#if primary_tag}}
+                <span class="post-card-tag">{{primary_tag.name}}</span>
+                {{/if}}
+                <h2 class="post-card-title">{{title}}</h2>
+                {{#if custom_excerpt}}
+                <p class="post-card-excerpt">{{custom_excerpt}}</p>
+                {{else}}
+                <p class="post-card-excerpt">{{excerpt words="25"}}</p>
+                {{/if}}
+                <time class="post-card-date" datetime="{{date format="YYYY-MM-DD"}}">{{date format="YYYY.MM.DD"}}</time>
+            </div>
+        </a>
+    </article>
+    {{/foreach}}
+</section>
+
+{{#if pagination.pages}}
+<nav class="pagination">
+    {{#if pagination.prev}}
+    <a class="pagination-prev" href="{{pagination.prev}}">&larr; Newer</a>
+    {{/if}}
+    <span class="pagination-info">Page {{pagination.page}} of {{pagination.pages}}</span>
+    {{#if pagination.next}}
+    <a class="pagination-next" href="{{pagination.next}}">Older &rarr;</a>
+    {{/if}}
+</nav>
+{{/if}}

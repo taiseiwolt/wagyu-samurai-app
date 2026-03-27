@@ -1,0 +1,53 @@
+{{!< default}}
+
+<article class="post-full {{post_class}}">
+    {{#if feature_image}}
+    <div class="post-hero" style="background-image: url({{feature_image}})">
+        <div class="post-hero-overlay"></div>
+        <div class="post-hero-content">
+            {{#if primary_tag}}
+            <span class="post-tag">{{primary_tag.name}}</span>
+            {{/if}}
+            <h1 class="post-title">{{title}}</h1>
+            <time class="post-date" datetime="{{date format="YYYY-MM-DD"}}">{{date format="YYYY.MM.DD"}}</time>
+        </div>
+    </div>
+    {{else}}
+    <div class="post-header-no-image">
+        {{#if primary_tag}}
+        <span class="post-tag">{{primary_tag.name}}</span>
+        {{/if}}
+        <h1 class="post-title">{{title}}</h1>
+        <time class="post-date" datetime="{{date format="YYYY-MM-DD"}}">{{date format="YYYY.MM.DD"}}</time>
+    </div>
+    {{/if}}
+
+    <div class="post-body">
+        <aside class="restaurant-info-box">
+            <h3>Restaurant Information</h3>
+            <div class="restaurant-info-grid">
+                <div class="restaurant-info-item">
+                    <div class="restaurant-info-label">Restaurant</div>
+                    <div class="restaurant-info-value">{{title}}</div>
+                </div>
+                {{#if primary_tag}}
+                <div class="restaurant-info-item">
+                    <div class="restaurant-info-label">Area</div>
+                    <div class="restaurant-info-value">{{primary_tag.name}}</div>
+                </div>
+                {{/if}}
+            </div>
+            <a href="https://wagyu-samurai-app.vercel.app/book" class="cta-button" target="_blank" rel="noopener">
+                Book this restaurant &rarr;
+            </a>
+        </aside>
+
+        <div class="post-content">
+            {{content}}
+        </div>
+
+        <a href="https://wagyu-samurai-app.vercel.app/book" class="cta-button" target="_blank" rel="noopener" style="margin-top: 3rem;">
+            Book this restaurant &rarr;
+        </a>
+    </div>
+</article>
