@@ -1,7 +1,11 @@
 import { Resend } from "resend";
 import { supabaseAdmin } from "./supabase";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error("RESEND_API_KEY is not configured");
+  return new Resend(key);
+}
 
 interface FollowupTarget {
   id: string;
@@ -49,7 +53,7 @@ export async function sendFollowupEmail(target: FollowupTarget): Promise<{
   const html = buildFollowupHtml(target.customer_name, storeName);
 
   try {
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from: "WAGYU SAMURAI <noreply@resend.dev>",
       to: target.customer_email,
       subject,

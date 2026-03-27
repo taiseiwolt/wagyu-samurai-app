@@ -45,16 +45,15 @@ export async function POST(req: NextRequest) {
     const { data: booking, error: dbError } = await supabaseAdmin
       .from("bookings")
       .insert({
-        guest_name: name,
-        guest_email: email,
-        arrival_date,
-        departure_date,
+        customer_name: name,
+        customer_email: email,
+        travel_dates: `[${arrival_date},${departure_date}]`,
         preferred_area,
-        cuisine_type,
+        preferred_genre: cuisine_type,
         party_size,
-        budget_per_person,
+        budget: budget_per_person,
         special_requests: special_requests || null,
-        preferred_restaurant: preferred_restaurant || null,
+        preferred_store: preferred_restaurant || null,
         status: "new",
         source: "form",
       })

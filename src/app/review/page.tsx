@@ -232,28 +232,14 @@ export default function ReviewPage() {
     }
   }
 
-  async function publishToMedium() {
-    if (!selectedPost) return;
-    setPublishing("medium");
-    await saveEdits();
-
+  async function copyForMedium() {
+    if (!mediumBody) return;
     try {
-      const res = await fetch("/api/publish/medium", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ post_id: selectedPost.id }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setPublishStatus((s) => ({ ...s, medium: true }));
-        showToast("Published to Medium");
-      } else {
-        showToast(data.error || "Medium publish failed");
-      }
+      await navigator.clipboard.writeText(mediumBody);
+      setPublishStatus((s) => ({ ...s, medium: true }));
+      showToast("Medium content copied! Now paste in Medium.");
     } catch {
-      showToast("Medium publish failed");
-    } finally {
-      setPublishing(null);
+      showToast("Failed to copy to clipboard");
     }
   }
 
@@ -920,19 +906,13 @@ export default function ReviewPage() {
                   : "Publish to Ghost"}
             </button>
 
-            {/* Medium */}
+            {/* Medium - Copy to clipboard */}
             <button
-              onClick={publishToMedium}
-              disabled={
-                !!publishing || !mediumBody || publishStatus.medium === true
-              }
+              onClick={copyForMedium}
+              disabled={!mediumBody || publishStatus.medium === true}
               className="px-4 py-2.5 bg-[#333] text-shimofuri text-xs font-medium rounded-lg hover:bg-[#444] disabled:opacity-30 transition-colors"
             >
-              {publishing === "medium"
-                ? "Publishing..."
-                : publishStatus.medium
-                  ? "Medium ✓"
-                  : "Publish to Medium"}
+              {publishStatus.medium ? "Copied ✓" : "Copy for Medium"}
             </button>
 
             {/* Mark published */}

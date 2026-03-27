@@ -13,18 +13,17 @@ interface Booking {
   plan: "standard" | "premium" | "vip" | null;
   customer_name: string;
   customer_email: string | null;
-  travel_start_date: string | null;
-  travel_end_date: string | null;
+  travel_dates: string | null;
   preferred_area: string | null;
   preferred_genre: string | null;
   party_size: number | null;
-  budget_range: string | null;
+  budget: string | null;
   special_requests: string | null;
-  preferred_store_name: string | null;
+  preferred_store: string | null;
   store_id: string | null;
   reservation_date: string | null;
   reservation_time: string | null;
-  admin_notes: string | null;
+  notes: string | null;
   confirmation_email_sent: boolean;
   followup_email_sent: boolean;
   created_at: string;
@@ -75,6 +74,14 @@ const PLAN_PRICES: Record<string, number> = {
   premium: 2000,
   vip: 3000,
 };
+
+// Parse daterange string like "[2026-04-15,2026-04-19)" into display format
+function formatDateRange(daterange: string | null): string {
+  if (!daterange) return "—";
+  const match = daterange.match(/[\[(]([\d-]+),([\d-]+)[)\]]/);
+  if (!match) return daterange;
+  return `${match[1]} → ${match[2]}`;
+}
 
 // --- Navigation ---
 
@@ -193,9 +200,9 @@ function AddDmModal({
     preferred_area: "",
     preferred_genre: "",
     party_size: "",
-    budget_range: "",
+    budget: "",
     special_requests: "",
-    preferred_store_name: "",
+    preferred_store: "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -213,19 +220,24 @@ function AddDmModal({
     setSaving(true);
     setError(null);
 
+    const travelDates = form.travel_start_date && form.travel_end_date
+      ? `[${form.travel_start_date},${form.travel_end_date}]`
+      : form.travel_start_date
+        ? `[${form.travel_start_date},${form.travel_start_date}]`
+        : null;
+
     const { error: dbError } = await supabase.from("bookings").insert({
       source: "dm",
       status: "new",
       customer_name: form.customer_name.trim(),
       customer_email: form.customer_email.trim() || null,
-      travel_start_date: form.travel_start_date || null,
-      travel_end_date: form.travel_end_date || null,
+      travel_dates: travelDates,
       preferred_area: form.preferred_area.trim() || null,
       preferred_genre: form.preferred_genre.trim() || null,
       party_size: form.party_size ? parseInt(form.party_size) : null,
-      budget_range: form.budget_range.trim() || null,
+      budget: form.budget.trim() || null,
       special_requests: form.special_requests.trim() || null,
-      preferred_store_name: form.preferred_store_name.trim() || null,
+      preferred_store: form.preferred_store.trim() || null,
     });
 
     setSaving(false);
@@ -241,9 +253,9 @@ function AddDmModal({
       preferred_area: "",
       preferred_genre: "",
       party_size: "",
-      budget_range: "",
+      budget: "",
       special_requests: "",
-      preferred_store_name: "",
+      preferred_store: "",
     });
     onCreated();
     onClose();
@@ -320,15 +332,15 @@ function AddDmModal({
             />
             <Field
               label="Budget Range"
-              value={form.budget_range}
-              onChange={(v) => updateField("budget_range", v)}
+              value={form.budget}
+              onChange={(v) => updateField("budget", v)}
               placeholder="e.g. ¥10,000-20,000"
             />
           </div>
           <Field
             label="Preferred Store"
-            value={form.preferred_store_name}
-            onChange={(v) => updateField("preferred_store_name", v)}
+            value={form.preferred_store}
+            onChange={(v) => updateField("preferred_store", v)}
             placeholder="If any specific store"
           />
           <div>
@@ -548,7 +560,7 @@ function DetailPanel({
   const [reservationTime, setReservationTime] = useState(
     booking.reservation_time || "",
   );
-  const [adminNotes, setAdminNotes] = useState(booking.admin_notes || "");
+  const [adminNotes, setAdminNotes] = useState(booking.notes || "");
   const [saving, setSaving] = useState(false);
   const [storeSearch, setStoreSearch] = useState("");
 
@@ -588,7 +600,7 @@ function DetailPanel({
         store_id: storeId || null,
         reservation_date: reservationDate || null,
         reservation_time: reservationTime || null,
-        admin_notes: adminNotes.trim() || null,
+        notes: adminNotes.trim() || null,
       })
       .eq("id", booking.id);
 
@@ -639,7 +651,7 @@ function DetailPanel({
         body: JSON.stringify({
           area: booking.preferred_area,
           genre: booking.preferred_genre,
-          priceRange: booking.budget_range,
+          priceRange: booking.budget,
           partySize: booking.party_size,
           excludeStoreId: storeId || undefined,
         }),
@@ -700,9 +712,7 @@ function DetailPanel({
               <div className="flex justify-between">
                 <span className="text-shimofuri/50 text-xs">Travel</span>
                 <span className="text-shimofuri text-sm">
-                  {booking.travel_start_date && booking.travel_end_date
-                    ? `${booking.travel_start_date} → ${booking.travel_end_date}`
-                    : booking.travel_start_date || "—"}
+                  {formatDateRange(booking.travel_dates)}
                 </span>
               </div>
             </div>
@@ -735,16 +745,16 @@ function DetailPanel({
               <div className="flex justify-between">
                 <span className="text-shimofuri/50 text-xs">Budget</span>
                 <span className="text-shimofuri text-sm">
-                  {booking.budget_range || "—"}
+                  {booking.budget || "—"}
                 </span>
               </div>
-              {booking.preferred_store_name && (
+              {booking.preferred_store && (
                 <div className="flex justify-between">
                   <span className="text-shimofuri/50 text-xs">
                     Preferred Store
                   </span>
                   <span className="text-shimofuri text-sm">
-                    {booking.preferred_store_name}
+                    {booking.preferred_store}
                   </span>
                 </div>
               )}
@@ -1189,9 +1199,7 @@ export default function BookingsPage() {
                         {b.customer_name}
                       </td>
                       <td className="py-3 px-3 text-shimofuri/60 hidden md:table-cell">
-                        {b.travel_start_date
-                          ? `${b.travel_start_date}${b.travel_end_date ? ` → ${b.travel_end_date}` : ""}`
-                          : "—"}
+                        {formatDateRange(b.travel_dates)}
                       </td>
                       <td className="py-3 px-3 text-shimofuri/60 hidden lg:table-cell">
                         {b.preferred_area || "—"}
