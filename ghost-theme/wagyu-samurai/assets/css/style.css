@@ -71,6 +71,8 @@ img { max-width: 100%; height: auto; }
 .logo-samurai { color: var(--gold); }
 
 .site-nav { display: flex; align-items: center; gap: 1.5rem; }
+.site-nav ul { list-style: none; display: flex; align-items: center; gap: 1.5rem; margin: 0; padding: 0; }
+.site-nav li { list-style: none; }
 .site-nav a {
     font-size: .85rem;
     font-weight: 500;
@@ -496,6 +498,8 @@ img { max-width: 100%; height: auto; }
         padding: 1rem 1.5rem;
         gap: .75rem;
     }
+
+    .site-nav ul { flex-direction: column; gap: .75rem; }
 
     .site-nav.active { display: flex; }
 
