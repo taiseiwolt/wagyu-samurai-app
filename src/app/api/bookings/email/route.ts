@@ -5,6 +5,24 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+const PAYMENT_LINKS: Record<string, string | undefined> = {
+  standard: process.env.STRIPE_PAYMENT_LINK_STANDARD,
+  premium: process.env.STRIPE_PAYMENT_LINK_PREMIUM,
+  vip: process.env.STRIPE_PAYMENT_LINK_VIP,
+};
+
+const PLAN_LABELS: Record<string, string> = {
+  standard: "Standard",
+  premium: "Premium",
+  vip: "VIP",
+};
+
+const PLAN_FEES: Record<string, string> = {
+  standard: "$15/person",
+  premium: "$20/person",
+  vip: "$30/person",
+};
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -27,6 +45,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const planKey = (plan || "standard").toLowerCase();
+    const paymentLink = PAYMENT_LINKS[planKey];
+    const planLabel = PLAN_LABELS[planKey] || "Standard";
+    const planFee = PLAN_FEES[planKey] || "$15/person";
+
+    const paymentSection = paymentLink
+      ? `
+8. A "Pay Reservation Fee" section at the end of the email, just before the sign-off:
+   - A brief line: "To confirm your reservation, please complete the service fee payment:"
+   - A clear call-to-action on its own line: "→ Pay Reservation Fee (${planLabel} Plan — ${planFee}): ${paymentLink}"
+   - A note: "Payment is required to finalize your booking."
+`
+      : `
+8. A note that the reservation fee payment link will be sent separately.
+`;
+
     const prompt = `You are writing a confirmation email for WAGYU SAMURAI, a premium wagyu dining concierge service in Japan. Generate a professional, warm, and concise confirmation email in English.
 
 Details:
@@ -37,7 +71,7 @@ Details:
 - Date: ${reservationDate}
 - Time: ${reservationTime || "TBD"}
 - Party size: ${partySize} guests
-- Plan: ${plan || "Standard"}
+- Plan: ${planLabel}
 - Special requests: ${specialRequests || "None"}
 
 Generate the email with:
@@ -47,9 +81,8 @@ Generate the email with:
 4. "Good to know" section with 2-3 practical notes (dress code, cancellation policy, arrival time, etc.)
 5. A confident closing line
 6. Sign off as "— WAGYU SAMURAI"
-
-Keep the tone premium but approachable. Do NOT use markdown formatting — use plain text only.
-Also generate a subject line in the format: Your table is booked — [Store Name], [Date]
+7. Do NOT use markdown formatting — use plain text only.
+${paymentSection}
 
 Return the response in this exact JSON format:
 {"subject": "...", "body": "..."}`;
@@ -63,7 +96,6 @@ Return the response in this exact JSON format:
     const text =
       message.content[0].type === "text" ? message.content[0].text : "";
 
-    // Parse the JSON from Claude's response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json(
