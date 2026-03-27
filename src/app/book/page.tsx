@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 
 const AREAS = ["Tokyo", "Kyoto", "Osaka", "No preference"] as const;
 const CUISINES = [
@@ -29,7 +30,10 @@ interface FormData {
   preferred_restaurant: string;
 }
 
-export default function BookPage() {
+function BookForm() {
+  const searchParams = useSearchParams();
+  const prefilledStore = searchParams.get("store") || "";
+
   const [form, setForm] = useState<FormData>({
     name: "",
     email: "",
@@ -40,7 +44,7 @@ export default function BookPage() {
     party_size: 2,
     budget_per_person: "",
     special_requests: "",
-    preferred_restaurant: "",
+    preferred_restaurant: prefilledStore,
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -295,6 +299,14 @@ export default function BookPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-sumi" />}>
+      <BookForm />
+    </Suspense>
   );
 }
 

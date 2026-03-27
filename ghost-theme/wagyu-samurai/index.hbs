@@ -3,13 +3,54 @@
 <section class="hero-section">
     <div class="hero-inner">
         <h1 class="hero-title">WAGYU SAMURAI</h1>
-        <p class="hero-description">Hand-picked. If it's here, it's worth it. Taste over trends.</p>
+        <p class="hero-tagline">&ldquo;Hand-picked. If it&rsquo;s here, it&rsquo;s worth it. Taste over trends.&rdquo;</p>
+        <p class="hero-sub">Premium wagyu curation + reservations in Tokyo &middot; Kyoto &middot; Osaka</p>
+        <div class="hero-social">
+            <a href="https://www.instagram.com/wagyu.samurai" target="_blank" rel="noopener noreferrer" class="hero-social-link" aria-label="Instagram">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+                <span>Instagram</span>
+            </a>
+            <a href="https://x.com/wagyusamurai" target="_blank" rel="noopener noreferrer" class="hero-social-link" aria-label="X">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.258 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>
+                <span>X</span>
+            </a>
+        </div>
     </div>
 </section>
 
-<section class="posts-grid">
+<div class="filter-bar" id="filter-bar">
+    <div class="filter-bar-inner">
+        <div class="filter-group">
+            <span class="filter-label">Budget</span>
+            <select id="filter-cost" class="filter-select">
+                <option value="">All</option>
+                <option value="cost-5000">~¥5,000</option>
+                <option value="cost-10000">¥5,000~¥10,000</option>
+                <option value="cost-15000">¥10,000~¥15,000</option>
+                <option value="cost-20000">¥15,000~¥20,000</option>
+                <option value="cost-30000">¥20,000~¥30,000</option>
+                <option value="cost-30000plus">¥30,000~</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">Area</span>
+            <div class="filter-btns" id="filter-area">
+                <button class="filter-btn active" data-value="">All</button>
+                <button class="filter-btn" data-value="area-tokyo">TOKYO</button>
+                <button class="filter-btn" data-value="area-kyoto">KYOTO</button>
+                <button class="filter-btn" data-value="area-osaka">OSAKA</button>
+            </div>
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">Open at</span>
+            <select id="filter-time" class="filter-select"></select>
+        </div>
+    </div>
+</div>
+
+<section class="posts-grid" id="posts-grid">
     {{#foreach posts}}
-    <article class="post-card {{post_class}}">
+    <article class="post-card {{post_class}}" data-tags="{{#foreach tags}}{{slug}},{{/foreach}}">
         <a class="post-card-link" href="{{url}}">
             {{#if feature_image}}
             <div class="post-card-image" style="background-image: url({{feature_image}})"></div>
@@ -17,16 +58,13 @@
             <div class="post-card-image post-card-image--default"></div>
             {{/if}}
             <div class="post-card-content">
-                {{#if primary_tag}}
-                <span class="post-card-tag">{{primary_tag.name}}</span>
-                {{/if}}
+                <div class="post-card-badges"></div>
                 <h2 class="post-card-title">{{title}}</h2>
                 {{#if custom_excerpt}}
                 <p class="post-card-excerpt">{{custom_excerpt}}</p>
                 {{else}}
                 <p class="post-card-excerpt">{{excerpt words="25"}}</p>
                 {{/if}}
-                <time class="post-card-date" datetime="{{date format="YYYY-MM-DD"}}">{{date format="YYYY.MM.DD"}}</time>
             </div>
         </a>
     </article>
@@ -44,3 +82,109 @@
     {{/if}}
 </nav>
 {{/if}}
+
+<script>
+(function () {
+    var AREA_LABELS = {
+        'area-tokyo': 'TOKYO',
+        'area-kyoto': 'KYOTO',
+        'area-osaka': 'OSAKA'
+    };
+    var COST_LABELS = {
+        'cost-5000': '~¥5,000',
+        'cost-10000': '¥5,000~¥10,000',
+        'cost-15000': '¥10,000~¥15,000',
+        'cost-20000': '¥15,000~¥20,000',
+        'cost-30000': '¥20,000~¥30,000',
+        'cost-30000plus': '¥30,000~'
+    };
+
+    // Populate time picker (11:00 – 23:00, 15 min steps)
+    var timeSelect = document.getElementById('filter-time');
+    var opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = 'Any time';
+    timeSelect.appendChild(opt0);
+    for (var h = 11; h <= 23; h++) {
+        for (var m = 0; m < 60; m += 15) {
+            if (h === 23 && m > 0) break;
+            var hh = h < 10 ? '0' + h : '' + h;
+            var mm = m === 0 ? '00' : '' + m;
+            var opt = document.createElement('option');
+            opt.value = hh + mm;
+            opt.textContent = hh + ':' + mm;
+            timeSelect.appendChild(opt);
+        }
+    }
+
+    // Render badges on all cards
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.post-card'));
+    cards.forEach(function (card) {
+        var tags = (card.dataset.tags || '').split(',').filter(Boolean);
+        var container = card.querySelector('.post-card-badges');
+        if (!container) return;
+        tags.forEach(function (tag) {
+            if (AREA_LABELS[tag]) {
+                var b = document.createElement('span');
+                b.className = 'badge badge-area';
+                b.textContent = AREA_LABELS[tag];
+                container.appendChild(b);
+            }
+            if (COST_LABELS[tag]) {
+                var b = document.createElement('span');
+                b.className = 'badge badge-cost';
+                b.textContent = COST_LABELS[tag];
+                container.appendChild(b);
+            }
+        });
+    });
+
+    // Filter state
+    var state = { cost: '', area: '', time: '' };
+
+    function applyFilters() {
+        cards.forEach(function (card) {
+            var tags = (card.dataset.tags || '').split(',').filter(Boolean);
+            var show = true;
+
+            if (state.cost && tags.indexOf(state.cost) === -1) show = false;
+            if (state.area && tags.indexOf(state.area) === -1) show = false;
+
+            if (show && state.time) {
+                var openTag = null, closeTag = null;
+                tags.forEach(function (t) {
+                    if (t.indexOf('open-') === 0) openTag = parseInt(t.slice(5), 10);
+                    if (t.indexOf('close-') === 0) closeTag = parseInt(t.slice(6), 10);
+                });
+                var sel = parseInt(state.time, 10);
+                if (openTag !== null && closeTag !== null) {
+                    if (sel < openTag || sel > closeTag) show = false;
+                }
+            }
+
+            card.style.display = show ? '' : 'none';
+        });
+    }
+
+    document.getElementById('filter-cost').addEventListener('change', function () {
+        state.cost = this.value;
+        applyFilters();
+    });
+
+    Array.prototype.slice.call(document.querySelectorAll('#filter-area .filter-btn')).forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            Array.prototype.slice.call(document.querySelectorAll('#filter-area .filter-btn')).forEach(function (b) {
+                b.classList.remove('active');
+            });
+            this.classList.add('active');
+            state.area = this.dataset.value;
+            applyFilters();
+        });
+    });
+
+    document.getElementById('filter-time').addEventListener('change', function () {
+        state.time = this.value;
+        applyFilters();
+    });
+}());
+</script>

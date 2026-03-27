@@ -1,53 +1,106 @@
 {{!< default}}
 
-<article class="post-full {{post_class}}">
+<article class="post-full {{post_class}}" id="post-data" data-title="{{title}}" data-tags="{{#foreach tags}}{{slug}},{{/foreach}}">
     {{#if feature_image}}
     <div class="post-hero" style="background-image: url({{feature_image}})">
         <div class="post-hero-overlay"></div>
-        <div class="post-hero-content">
-            {{#if primary_tag}}
-            <span class="post-tag">{{primary_tag.name}}</span>
-            {{/if}}
-            <h1 class="post-title">{{title}}</h1>
-            <time class="post-date" datetime="{{date format="YYYY-MM-DD"}}">{{date format="YYYY.MM.DD"}}</time>
-        </div>
-    </div>
-    {{else}}
-    <div class="post-header-no-image">
-        {{#if primary_tag}}
-        <span class="post-tag">{{primary_tag.name}}</span>
-        {{/if}}
-        <h1 class="post-title">{{title}}</h1>
-        <time class="post-date" datetime="{{date format="YYYY-MM-DD"}}">{{date format="YYYY.MM.DD"}}</time>
     </div>
     {{/if}}
 
     <div class="post-body">
         <aside class="restaurant-info-box">
-            <h3>Restaurant Information</h3>
-            <div class="restaurant-info-grid">
-                <div class="restaurant-info-item">
-                    <div class="restaurant-info-label">Restaurant</div>
-                    <div class="restaurant-info-value">{{title}}</div>
-                </div>
-                {{#if primary_tag}}
-                <div class="restaurant-info-item">
-                    <div class="restaurant-info-label">Area</div>
-                    <div class="restaurant-info-value">{{primary_tag.name}}</div>
-                </div>
-                {{/if}}
-            </div>
-            <a href="https://wagyu-samurai-app.vercel.app/book" class="cta-button" target="_blank" rel="noopener">
-                Book this restaurant &rarr;
-            </a>
+            <h2 class="restaurant-info-title">{{title}}</h2>
+            <div class="restaurant-info-badges" id="restaurant-badges"></div>
+            <div class="restaurant-info-grid" id="restaurant-grid"></div>
         </aside>
 
         <div class="post-content">
             {{content}}
         </div>
-
-        <a href="https://wagyu-samurai-app.vercel.app/book" class="cta-button" target="_blank" rel="noopener" style="margin-top: 3rem;">
-            Book this restaurant &rarr;
-        </a>
     </div>
 </article>
+
+<a href="#" class="floating-book-btn" id="floating-book-btn" target="_blank" rel="noopener">
+    Book this restaurant &rarr;
+</a>
+
+<script>
+(function () {
+    var postEl = document.getElementById('post-data');
+    if (!postEl) return;
+    var title = postEl.dataset.title || '';
+    var tags = (postEl.dataset.tags || '').split(',').filter(Boolean);
+
+    var AREA_LABELS = {
+        'area-tokyo': 'TOKYO',
+        'area-kyoto': 'KYOTO',
+        'area-osaka': 'OSAKA'
+    };
+    var COST_LABELS = {
+        'cost-5000': '~¥5,000',
+        'cost-10000': '¥5,000~¥10,000',
+        'cost-15000': '¥10,000~¥15,000',
+        'cost-20000': '¥15,000~¥20,000',
+        'cost-30000': '¥20,000~¥30,000',
+        'cost-30000plus': '¥30,000~'
+    };
+    var GENRE_LABELS = {
+        'genre-yakiniku': 'Yakiniku',
+        'genre-teppanyaki': 'Teppanyaki',
+        'genre-sukiyaki': 'Sukiyaki',
+        'genre-shabu': 'Shabu-shabu',
+        'genre-steak': 'Steak',
+        'genre-sushi': 'Sushi'
+    };
+
+    // Set floating book button URL
+    var bookBtn = document.getElementById('floating-book-btn');
+    if (bookBtn && title) {
+        bookBtn.href = 'https://wagyu-samurai-app.vercel.app/book?store=' + encodeURIComponent(title);
+    }
+
+    // Parse tag data
+    var area = null, cost = null, genre = null, openTime = null, closeTime = null;
+    tags.forEach(function (tag) {
+        if (AREA_LABELS[tag]) area = AREA_LABELS[tag];
+        if (COST_LABELS[tag]) cost = COST_LABELS[tag];
+        if (GENRE_LABELS[tag]) genre = GENRE_LABELS[tag];
+        if (tag.indexOf('open-') === 0) openTime = tag.slice(5);
+        if (tag.indexOf('close-') === 0) closeTime = tag.slice(6);
+    });
+
+    // Area badge
+    var badgesEl = document.getElementById('restaurant-badges');
+    if (badgesEl && area) {
+        var ab = document.createElement('span');
+        ab.className = 'badge badge-area';
+        ab.textContent = area;
+        badgesEl.appendChild(ab);
+    }
+
+    // Info grid
+    var gridEl = document.getElementById('restaurant-grid');
+    if (gridEl) {
+        var items = [];
+        if (genre) items.push({ label: 'Cuisine', value: genre });
+        if (cost) items.push({ label: 'Price Range', value: cost + ' / person' });
+        if (openTime && closeTime) {
+            var fmt = function (t) { return t.slice(0, 2) + ':' + t.slice(2); };
+            items.push({ label: 'Hours', value: fmt(openTime) + ' \u2013 ' + fmt(closeTime) });
+        }
+        items.forEach(function (item) {
+            var div = document.createElement('div');
+            div.className = 'restaurant-info-item';
+            var label = document.createElement('div');
+            label.className = 'restaurant-info-label';
+            label.textContent = item.label;
+            var value = document.createElement('div');
+            value.className = 'restaurant-info-value';
+            value.textContent = item.value;
+            div.appendChild(label);
+            div.appendChild(value);
+            gridEl.appendChild(div);
+        });
+    }
+}());
+</script>
